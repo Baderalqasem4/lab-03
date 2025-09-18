@@ -1,19 +1,30 @@
 package com.example.listycitylab3;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ListView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements AddCityFragment.AddCityDialogListener {
 
-    private ArrayList<String> dataList;
+    private ArrayList<City> dataList;
     private ListView cityList;
-    private ArrayAdapter<String> cityAdapter;
+    private CityArrayAdapter cityAdapter;
+
+    @Override
+    public void addCity(City city) {
+        cityAdapter.add(city);
+        cityAdapter.notifyDataSetChanged();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,16 +32,54 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         String[] cities = {
-                "Edmonton", "Vancouver", "Moscow",
-                "Sydney", "Berlin", "Vienna",
-                "Tokyo", "Beijing", "Osaka", "New Delhi"
+                "Edmonton", "Vancouver", "Toronto"
+        };
+
+        String[] provinces = {
+                "AB", "BC", "ON"
         };
 
         dataList = new ArrayList<>();
-        dataList.addAll(Arrays.asList(cities));
+        for (int i = 0; i < cities.length; i++) {
+            dataList.add(new City(cities[i], provinces[i]));
+        }
         
         cityList = findViewById(R.id.city_list);
-        cityAdapter = new ArrayAdapter<>(this, R.layout.content, dataList);
+        cityAdapter = new CityArrayAdapter(this, dataList);
         cityList.setAdapter(cityAdapter);
+
+        cityList.setOnItemClickListener((parent, view, position, id) -> {
+            City selectedCity = dataList.get(position);
+
+            View dialogView = getLayoutInflater().inflate(R.layout.fragment_add_city, null);
+            EditText etCity = dialogView.findViewById(R.id.edit_text_city_text);
+            EditText etProvince = dialogView.findViewById(R.id.edit_text_province_text);
+
+            etCity.setText(selectedCity.getName());
+            etProvince.setText(selectedCity.getProvince());
+
+            new AlertDialog.Builder(MainActivity.this)
+                    .setTitle("Edit City & Province")
+                    .setView(dialogView)
+                    .setPositiveButton("Save", (dialog, which) -> {
+                        // Update object with new values
+                        selectedCity.setName(etCity.getText().toString().trim());
+                        selectedCity.setProvince(etProvince.getText().toString().trim());
+
+                        // Refresh the list to show updates
+                        cityAdapter.notifyDataSetChanged();
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        });
+
+
+        FloatingActionButton fab = findViewById(R.id.button_add_city);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                new AddCityFragment().show(getSupportFragmentManager(), "Add City");
+            }
+        });
     }
 }
